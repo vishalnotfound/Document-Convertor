@@ -8,10 +8,13 @@ function Home() {
   const [downloadError, setDownloadError] = useState("");
   const [showMessage, setShowMessage] = useState(false);
 
+  const API_URL = process.env.NODE_ENV === "production"
+    ? "https://document-convertor-2.onrender.com/convertFile"
+    : "http://localhost:3001/convertFile";
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
-    console.log("Selected file:", file);
   };
 
   const handleSubmit = async (event) => {
@@ -27,15 +30,11 @@ function Home() {
     formData.append("file", selectedFile);
 
     try {
-      const response = await axios.post(
-        "http://localhost:3001/convertFile",
-        formData,
-        { responseType: "blob" }
-      );
+      const response = await axios.post(API_URL, formData, {
+        responseType: "blob",
+      });
 
-      console.log(response);
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      console.log(url);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute(
@@ -44,9 +43,8 @@ function Home() {
       );
       document.body.appendChild(link);
       link.click();
-      link.parentNode.removeChild(link);
+      link.remove();
 
-      // Clear file input field manually after successful conversion
       document.getElementById("FileInput").value = "";
       setSelectedFile(null);
       setDownloadError("");
@@ -54,7 +52,7 @@ function Home() {
       setShowMessage(true);
       hideMessage();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       if (error.response && error.response.status === 400) {
         setDownloadError("Error Occurred: " + error.response.data.message);
       } else {
@@ -63,7 +61,6 @@ function Home() {
     }
   };
 
-  // Function to hide message after 3 seconds
   const hideMessage = () => {
     setTimeout(() => {
       setShowMessage(false);
@@ -73,7 +70,7 @@ function Home() {
   return (
     <div className="max-w-screen-2xl mx-auto container px-6 py-3 md:px-40">
       <div className="flex h-screen items-center justify-center">
-        <div className="border-2 border-dashed px-4 py-2 md:px-8 py-6 border-indigo-500 rounded-lg shadow-lg">
+        <div className="border-2 border-dashed px-4 py-6 md:px-8 border-indigo-500 rounded-lg shadow-lg">
           <h1 className="text-3xl font-bold text-center mb-4">
             Convert Word file into PDF
           </h1>
@@ -88,7 +85,7 @@ function Home() {
               accept=".doc, .docx"
               className="hidden"
               onChange={handleFileChange}
-              id="FileInput" // Added ID to clear input field later
+              id="FileInput"
             />
             <label
               htmlFor="FileInput"
@@ -111,12 +108,10 @@ function Home() {
               Convert File
             </button>
 
-            {/* Success Message (Auto-Hides) */}
             {showMessage && convert && (
               <div className="text-green-500 text-center mt-4">{convert}</div>
             )}
 
-            {/* Error Message */}
             {downloadError && (
               <div className="text-red-500 text-center">{downloadError}</div>
             )}
